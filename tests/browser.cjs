@@ -7,10 +7,11 @@ const fs = require('node:fs');
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, permissions: ['clipboard-read','clipboard-write'] });
   const page = await context.newPage();
   const errors = [], unexpectedRequests = [];
+  const url = process.env.TEST_URL || 'http://127.0.0.1:8080';
+  const origin = new URL(url).origin;
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  page.on('request', request => { if (!request.url().startsWith('http://127.0.0.1:')) unexpectedRequests.push(request.url()); });
-  const url = process.env.TEST_URL || 'http://127.0.0.1:8080';
+  page.on('request', request => { if (new URL(request.url()).origin !== origin) unexpectedRequests.push(request.url()); });
   fs.mkdirSync('qa/screenshots', { recursive: true });
   try {
     await page.goto(url);
